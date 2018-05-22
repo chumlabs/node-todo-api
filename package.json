@@ -4,11 +4,21 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon server/server.js",
+    "test": "jest --env node",
+    "test-watch": "jest --watch --env node"
   },
   "author": "KH",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^3.0.8"
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "mongodb": "^3.0.8",
+    "mongoose": "^5.1.2"
+  },
+  "devDependencies": {
+    "jest": "^22.4.4",
+    "nodemon": "^1.17.4",
+    "supertest": "^3.1.0"
   }
 }
