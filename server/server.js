@@ -1,5 +1,6 @@
 const express = require('express');
 // const bodyParser = require('body-parser');  // not needed for .json .urlEncoded
+const { ObjectID } = require('mongodb');
 
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
@@ -34,6 +35,20 @@ app.get('/todos', (req, res) => {
     },
     err => res.status(400).send(err)
   );
+});
+
+// sepecific todo
+// TODO: remove todo object in response?
+app.get('/todos/:id', (req, res) => {
+  const { id } = req.params;
+
+  if (!ObjectID.isValid(id)) {
+    res.sendStatus(404);
+  } else {
+    Todo.findById(id)
+      .then(todo => (todo ? res.send({ todo }) : res.sendStatus(404)))
+      .catch(err => res.sendStatus(400));
+  }
 });
 
 app.listen(port, () => {

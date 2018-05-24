@@ -1,11 +1,22 @@
 const request = require('supertest');
 
+const { ObjectID } = require('mongodb');
+
 const { app } = require('../server');
 const { Todo } = require('../models/todo');
 // const { User } = require('../models/user');
 
 // test data
-const todos = [{ text: 'test todo number 1' }, { text: 'test todo number 2' }];
+const todos = [
+  {
+    _id: new ObjectID(),
+    text: 'test todo number 1'
+  },
+  {
+    _id: new ObjectID(),
+    text: 'test todo number 2'
+  }
+];
 
 // clear test db
 beforeEach(done => {
@@ -70,6 +81,36 @@ describe('GET /todos', () => {
       .expect(res => {
         expect(res.body.todos.length).toBe(2);
       })
+      .end(done);
+  });
+});
+
+describe('GET /todos/:id', () => {
+  test('should return todo object', done => {
+    const { _id: id, text } = todos[0];
+    request(app)
+      .get(`/todos/${id.toHexString()}`)
+      .expect(200)
+      .expect(res => {
+        // console.log(res.body);
+        expect(res.body.todo.text).toBe(text);
+      })
+      .end(done);
+  });
+
+  test('should return 404 response for invalid id', done => {
+    const id = 9827349;
+    request(app)
+      .get(`/todos/${id}`)
+      .expect(404)
+      .end(done);
+  });
+
+  test('should return 404 for non-existent (but valid) id', done => {
+    const id = new ObjectID();
+    request(app)
+      .get(`/todos/${id.toHexString()}`)
+      .expect(404)
       .end(done);
   });
 });
