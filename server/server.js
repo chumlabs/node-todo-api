@@ -14,6 +14,7 @@ const app = express();
 app.use(express.json());
 
 // todos route
+// save todo (post)
 app.post('/todos', (req, res) => {
   const todo = new Todo({
     text: req.body.text
@@ -29,22 +30,23 @@ app.post('/todos', (req, res) => {
   );
 });
 
+// get all todos
 app.get('/todos', (req, res) => {
   Todo.find().then(
     todos => {
-      res.send({ todos });
+      return res.send({ todos });
     },
     err => res.status(400).send(err)
   );
 });
 
-// sepecific todo
+// get specific todo
 // TODO: remove todo object in response?
 app.get('/todos/:id', (req, res) => {
   const { id } = req.params;
 
   if (!ObjectID.isValid(id)) {
-    res.sendStatus(404);
+    return res.sendStatus(404);
   } else {
     Todo.findById(id)
       .then(todo => (todo ? res.send({ todo }) : res.sendStatus(404)))
@@ -52,6 +54,22 @@ app.get('/todos/:id', (req, res) => {
   }
 });
 
+// remove todo
+app.delete('/todos/:id', (req, res) => {
+  const { id } = req.params;
+
+  console.log(id);
+
+  if (!ObjectID.isValid(id)) {
+    return res.sendStatus(404);
+  }
+
+  Todo.findByIdAndRemove(id)
+    .then(todo => (todo ? res.send({ todo }) : res.sendStatus(404)))
+    .catch(err => res.sendStatus(400));
+});
+
+// start listener
 app.listen(port, () => {
   console.log(`app listening on port ${port}`);
 });
