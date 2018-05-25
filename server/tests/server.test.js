@@ -14,7 +14,9 @@ const todos = [
   },
   {
     _id: new ObjectID(),
-    text: 'test todo number 2'
+    text: 'test todo number 2',
+    completed: true,
+    completedAt: new Date().getTime()
   }
 ];
 
@@ -151,6 +153,79 @@ describe('DELETE /todos/:id', () => {
     request(app)
       .delete(`/todos/${id.toHexString()}`)
       .expect(404)
+      .end(done);
+  });
+});
+
+describe('PATCH /todos/:id', () => {
+  test('should update an existing todo', done => {
+    const { _id: id, completed } = todos[0];
+    const updatedText = 'updated todo text';
+    const updatedTodo = { text: updatedText };
+
+    request(app)
+      .patch(`/todos/${id}`)
+      .send(updatedTodo)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo.text).toBe(updatedText);
+        expect(res.body.todo.completed).toBeFalsy();
+        expect(res.body.todo.completedAt).toBeFalsy();
+      })
+      .end(done);
+  });
+
+  test('should update complete & completedAt when completed is updated to true', done => {
+    const { _id: id } = todos[0];
+    const updatedText = 'updated todo text again';
+    const updatedTodo = { text: updatedText, completed: true };
+
+    request(app)
+      .patch(`/todos/${id}`)
+      .send(updatedTodo)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo.text).toBe(updatedText);
+        expect(res.body.todo.completed).toBeTruthy();
+        expect(res.body.todo.completedAt).toBeTruthy();
+      })
+      .end(done);
+  });
+
+  test('should update complete & completedAt when completed is updated to false', done => {
+    const { _id: id } = todos[1];
+    const updatedTodo = { completed: false };
+
+    request(app)
+      .patch(`/todos/${id}`)
+      .send(updatedTodo)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo.completed).toBeFalsy();
+        expect(res.body.todo.completedAt).toBeFalsy();
+      })
+      .end(done);
+  });
+
+  test('should reply with 404 for invalid id', done => {
+    const id = 9827349;
+    request(app)
+      .delete(`/todos/${id}`)
+      .expect(404)
+      .end(done);
+  });
+
+  test('should not change todo for valid id but invalid data', done => {
+    const { _id: id } = todos[0];
+    const updatedTodo = { inject: "console.log('gotcha')" };
+
+    request(app)
+      .patch(`/todos/${id}`)
+      .send(updatedTodo)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo.inject).toBeFalsy;
+      })
       .end(done);
   });
 });
