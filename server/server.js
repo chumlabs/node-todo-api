@@ -10,12 +10,35 @@ const port = process.env.PORT;
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
 const { User } = require('./models/user');
+const { authenticate } = require('./middleware/authenticate');
 
 const app = express();
 
 app.use(express.json());
 
-// todos route
+// users routes
+// POST
+app.post('/users', (req, res) => {
+  const body = _.pick(req.body, ['email', 'password']);
+  const user = new User(body);
+
+  user
+    .generateAuthToken()
+    .then(token => {
+      res.header('x-auth', token).send(user);
+    })
+    .catch(err => {
+      res.sendStatus(400);
+      console.log(err);
+    });
+});
+
+// GET /users
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+// todos routes
 // save todo (post)
 app.post('/todos', (req, res) => {
   const todo = new Todo({
