@@ -47,13 +47,34 @@ userSchema.pre('save', function(next) {
       .then(salt => bcrypt.hash(user.password, salt))
       .then(hash => (user.password = hash))
       .then(() => next())
-      .catch(err => console.log(err));
+      .catch(err => {
+        // log error
+      });
   } else {
     next();
   }
 });
 
-// find token model method
+// findByLoginCredentials model method
+// - used to find user using username/pwd
+userSchema.statics.findByLoginCredentials = function(credentials) {
+  let User = this;
+  const { email, password } = credentials;
+
+  return User.findOne({ email }).then(user => {
+    if (!user) return Promise.reject(new Error('credentials do not match'));
+
+    // email found, check pwd...
+    return bcrypt
+      .compare(password, user.password)
+      .then(
+        isMatch =>
+          isMatch ? user : Promise.reject(new Error('credentials do not match'))
+      );
+  });
+};
+
+// findByToken model method
 // - used to find user by token
 userSchema.statics.findByToken = function(token) {
   let User = this;

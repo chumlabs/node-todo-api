@@ -29,11 +29,13 @@ describe('POST /users', () => {
       })
       .end(err => {
         if (err) return done(err);
-        User.findOne({ email }).then(user => {
-          expect(user).toBeTruthy();
-          expect(user.password).not.toBe(password);
-          done();
-        });
+        User.findOne({ email })
+          .then(user => {
+            expect(user).toBeTruthy();
+            expect(user.password).not.toBe(password);
+            done();
+          })
+          .catch(err => done(err));
       });
   });
 
@@ -52,6 +54,68 @@ describe('POST /users', () => {
     request(app)
       .post('/users')
       .send({ email: 'notAnEmail', password })
+      .expect(400)
+      .expect(res => {
+        expect(res.body).toEqual({});
+      })
+      .end(done);
+  });
+});
+
+describe('POST /users/login', () => {
+  const { _id, email, password } = users[1];
+
+  test('should login user with valid credentials', done => {
+    request(app)
+      .post('/users/login')
+      .send({ email, password })
+      .expect(200)
+      .expect(res => {
+        expect(res.body.email).toBe(email);
+        expect(res.body._id).toBe(_id.toHexString());
+        expect(res.headers['x-auth']).toBeTruthy();
+      })
+      .end((err, res) => {
+        if (err) return done(err);
+
+        User.findById(_id)
+          .then(user => {
+            expect(user.tokens[0]).toMatchObject({
+              access: 'auth',
+              token: res.headers['x-auth']
+            });
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+
+  test('should return 400 for existing user, incorrect user password', done => {
+    request(app)
+      .post('/users/login')
+      .send({ email, password: 'invalidPassword' })
+      .expect(400)
+      .expect(res => {
+        expect(res.body).toEqual({});
+      })
+      .end(done);
+  });
+
+  test('should return 400 for non-existing user', done => {
+    request(app)
+      .post('/users/login')
+      .send({ email: 'nonExistentUser@test.com', password })
+      .expect(400)
+      .expect(res => {
+        expect(res.body).toEqual({});
+      })
+      .end(done);
+  });
+
+  test('should return 400 for missing credential (password)', done => {
+    request(app)
+      .post('/users/login')
+      .send({ email: email })
       .expect(400)
       .expect(res => {
         expect(res.body).toEqual({});

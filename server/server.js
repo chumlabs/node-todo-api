@@ -1,11 +1,13 @@
+// config env variables for dev/test
 require('./config/config');
 
-const _ = require('lodash');
+// node_modules imports
+const _ = require('lodash/core');
 const express = require('express');
-// const bodyParser = require('body-parser');  // not needed for .json .urlEncoded
+// const bodyParser = require('body-parser');  // not needed for .json / .urlEncoded
 const { ObjectID } = require('mongodb');
 
-//
+// app imports
 const port = process.env.PORT;
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
@@ -14,7 +16,8 @@ const { authenticate } = require('./middleware/authenticate');
 
 const app = express();
 
-app.use(express.json());
+// parser
+app.use(express.json()); // needs error handling !!!
 
 // users routes
 // POST
@@ -32,6 +35,29 @@ app.post('/users', (req, res) => {
       // console.log(`error saving new user: `, err.message);
       // log error
     });
+});
+
+app.post('/users/login', (req, res) => {
+  const { email, password } = req.body;
+  const authToken = req.header('x-auth') || null;
+
+  if (!email || !password) {
+    res.status(400).send('username and password required');
+  } else {
+    User.findByLoginCredentials({ email, password })
+      .then(user => {
+        // res with user & new token
+        return user.generateAuthToken().then(token => {
+          res.header('x-auth', token).send(user);
+
+          // TODO: if token exists, remove token & generate a new one
+        });
+      })
+      .catch(err => {
+        res.status(400).send(err.message);
+        // log error
+      });
+  }
 });
 
 // GET /users
