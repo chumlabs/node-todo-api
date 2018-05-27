@@ -19,7 +19,7 @@ const app = express();
 // parser
 app.use(express.json()); // needs error handling !!!
 
-// users routes
+// USERS ROUTES
 // POST
 app.post('/users', (req, res) => {
   const body = _.pick(req.body, ['email', 'password']);
@@ -65,7 +65,18 @@ app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
 
-// todos routes
+// DELETE /users/me/token
+app.delete('/users/me/token', authenticate, (req, res) => {
+  req.user
+    .removeToken(req.token)
+    .then(() => res.sendStatus(200))
+    .catch(err => {
+      res.sendStatus(400);
+      // log error
+    });
+});
+
+// TODOS ROUTES
 // save todo (post)
 app.post('/todos', (req, res) => {
   const todo = new Todo({

@@ -150,6 +150,36 @@ describe('GET /users/me', () => {
   });
 });
 
+describe('DELETE /users/me/token', () => {
+  test('should remove auth token on logout', done => {
+    const token = users[0].tokens[0].token;
+    const _id = users[0]._id;
+
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', token)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+
+        User.findById(_id)
+          .then(user => {
+            expect(user.tokens.length).toBe(0);
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+
+  test('should respond with 400 error for invalid token', done => {
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', 'jfjfjfjdkNOTAVALIDTOKENlkjsdfofeoe')
+      .expect(401)
+      .end(done);
+  });
+});
+
 // TESTING TODO routes
 describe('POST /todos', () => {
   test('should create a new todo', done => {

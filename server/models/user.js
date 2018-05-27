@@ -116,6 +116,20 @@ userSchema.methods.generateAuthToken = function() {
   return user.save().then(() => token);
 };
 
+// jwt remove token instance method
+// - removes a given token
+userSchema.methods.removeToken = function(token) {
+  const user = this;
+
+  return user.update({
+    $pull: {
+      tokens: {
+        token
+      }
+    }
+  });
+};
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = { User };
