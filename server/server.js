@@ -29,7 +29,8 @@ app.post('/users', (req, res) => {
     })
     .catch(err => {
       res.sendStatus(400);
-      console.log(err);
+      // console.log(`error saving new user: `, err.message);
+      // log error
     });
 });
 
@@ -45,24 +46,23 @@ app.post('/todos', (req, res) => {
     text: req.body.text
   });
 
-  todo.save().then(
-    doc => {
-      res.send(doc);
-    },
-    err => {
-      res.status(400).send(err);
-    }
-  );
+  todo
+    .save()
+    .then(doc => res.send(doc))
+    .catch(err => {
+      res.status(400).send(err.message);
+      // log error
+    });
 });
 
 // get all todos
 app.get('/todos', (req, res) => {
-  Todo.find().then(
-    todos => {
-      return res.send({ todos });
-    },
-    err => res.status(400).send(err)
-  );
+  Todo.find()
+    .then(todos => res.send({ todos }))
+    .catch(err => {
+      res.status(400).send(err.message);
+      // log error
+    });
 });
 
 // get specific todo
@@ -82,8 +82,6 @@ app.get('/todos/:id', (req, res) => {
 // remove todo
 app.delete('/todos/:id', (req, res) => {
   const { id } = req.params;
-
-  console.log(id);
 
   if (!ObjectID.isValid(id)) {
     return res.sendStatus(404);

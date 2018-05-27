@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const key = process.env.JWTSEC;
 
 const userSchema = mongoose.Schema({
   email: {
@@ -33,36 +36,31 @@ const userSchema = mongoose.Schema({
   ]
 });
 
-userSchema.methods.toJSON = function() {
+// schema middleware
+// - pwd hash on save event
+userSchema.pre('save', function(next) {
   const user = this;
-  const { _id, email } = user.toObject();
 
-  return { _id, email };
-};
+  if (user.isModified('password')) {
+    bcrypt
+      .genSalt(10)
+      .then(salt => bcrypt.hash(user.password, salt))
+      .then(hash => (user.password = hash))
+      .then(() => next())
+      .catch(err => console.log(err));
+  } else {
+    next();
+  }
+});
 
-userSchema.methods.generateAuthToken = function() {
-  const user = this;
-  const access = 'auth';
-  const secKey = 'Sr6RHgqGxT3ZhdYsdS3SvJ';
-  const token = jwt
-    .sign({ _id: user._id.toHexString(), access }, secKey, { expiresIn: 60 * 60 * 24 })
-    .toString();
-
-  user.tokens = user.tokens.concat([{ access, token }]);
-
-  return user
-    .save()
-    .then(() => token)
-    .catch(err => console.log(err));
-};
-
+// find token model method
+// - used to find user by token
 userSchema.statics.findByToken = function(token) {
   let User = this;
   let decoded;
-  const secKey = 'Sr6RHgqGxT3ZhdYsdS3SvJ';
 
   try {
-    decoded = jwt.verify(token, secKey);
+    decoded = jwt.verify(token, key);
   } catch (err) {
     return Promise.reject();
   }
@@ -72,6 +70,29 @@ userSchema.statics.findByToken = function(token) {
     'tokens.token': token,
     'tokens.access': 'auth'
   });
+};
+
+// toJSON (shadowing) instance method
+// - ensures only id & email user props are returned
+userSchema.methods.toJSON = function() {
+  const user = this;
+  const { _id, email } = user.toObject();
+
+  return { _id, email };
+};
+
+// jwt auth token generator/creator instance method
+// - adds new token to tokens user prop
+userSchema.methods.generateAuthToken = function() {
+  const user = this;
+  const access = 'auth';
+  const token = jwt
+    .sign({ _id: user._id.toHexString(), access }, key, { expiresIn: 60 * 60 * 24 })
+    .toString();
+
+  user.tokens = user.tokens.concat([{ access, token }]);
+
+  return user.save().then(() => token);
 };
 
 const User = mongoose.model('User', userSchema);
